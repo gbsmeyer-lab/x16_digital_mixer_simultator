@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Channel, ViewSection } from '../types';
 import { Knob } from './Knob';
 import { TOOLTIPS } from '../constants';
-import { Monitor, BarChart3, Settings2, Sliders } from 'lucide-react';
+import { Monitor, Settings2, Sliders } from 'lucide-react';
 
 interface Props {
   channel: Channel;
@@ -34,7 +34,6 @@ export const ChannelProcessing: React.FC<Props> = ({ channel, updateChannel, set
   const [selectedEQBandId, setSelectedEQBandId] = useState<string>('lomid');
 
   // Helper to update nested state
-  const updateComp = (key: string, val: any) => updateChannel(channel.id, { comp: { ...channel.comp, [key]: val } });
   const updateEQ = (bandId: string, key: string, val: any) => {
     const newBands = channel.eq.bands.map(b => b.id === bandId ? { ...b, [key]: val } : b);
     updateChannel(channel.id, { eq: { ...channel.eq, bands: newBands } });
@@ -91,37 +90,6 @@ export const ChannelProcessing: React.FC<Props> = ({ channel, updateChannel, set
             >
                 LOW CUT 80Hz
             </button>
-        </div>
-      </div>
-
-      {/* DYNAMICS - Border contrast increased */}
-      <div className="flex flex-col w-44 shrink-0 bg-x32-panel border border-zinc-500 rounded p-1.5">
-        <SectionHeader title="DYNAMICS" active={activeView === ViewSection.DYNAMICS} onView={() => setView(ViewSection.DYNAMICS)} icon={BarChart3} />
-        <div className="grid grid-cols-2 gap-y-1 gap-x-2 flex-1 items-center content-center px-1">
-            <div className="col-span-2 flex justify-center mb-0.5">
-                 <button 
-                   onClick={() => updateComp('on', !channel.comp.on)}
-                   className={`w-12 h-6 rounded-full border text-[9px] font-bold transition-all ${channel.comp.on ? 'bg-yellow-500 border-yellow-300 text-black shadow-[0_0_8px_orange]' : 'bg-zinc-800 border-zinc-600 text-zinc-500'}`}
-                >
-                    COMP
-                </button>
-            </div>
-            <Knob 
-                value={channel.comp.threshold} min={-60} max={0} label="THR" tooltipKey="compThresh" educationMode={educationMode} 
-                onChange={(v) => updateComp('threshold', v)} color="#ffff33"
-            />
-            <Knob 
-                value={channel.comp.ratio} min={1} max={100} label="RATIO" tooltipKey="compRatio" educationMode={educationMode} 
-                onChange={(v) => updateComp('ratio', v)} color="#ffff33"
-            />
-            <Knob 
-                value={channel.comp.attack} min={0} max={120} label="ATTACK" educationMode={educationMode} 
-                onChange={(v) => updateComp('attack', v)}
-            />
-             <Knob 
-                value={channel.comp.release} min={5} max={1000} label="HOLD" educationMode={educationMode} 
-                onChange={(v) => updateComp('release', v)}
-            />
         </div>
       </div>
 

@@ -1,5 +1,3 @@
-
-
 export interface EQBand {
   id: 'low' | 'lomid' | 'himid' | 'high';
   type: 'shelf' | 'peaking' | 'cut';
@@ -53,7 +51,6 @@ export enum ViewSection {
   HOME = 'HOME',
   CONFIG = 'CONFIG',
   GATE = 'GATE',
-  DYNAMICS = 'DYNAMICS',
   EQ = 'EQ',
   SENDS = 'SENDS'
 }

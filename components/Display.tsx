@@ -81,42 +81,6 @@ export const Display: React.FC<DisplayProps> = ({ channel, view, onLinkToggle })
                 </svg>
             </div>
         )
-      case ViewSection.DYNAMICS:
-         return (
-            <div className="flex flex-col h-full relative">
-                <div className="absolute top-2 left-2 text-x32-accent font-bold">COMPRESSOR</div>
-                <svg className="w-full h-full bg-zinc-900 border border-zinc-700 mt-2" viewBox="0 0 400 200">
-                    {/* 45 degree line (unity) */}
-                    <line x1="0" y1="200" x2="200" y2="0" stroke="#333" strokeDasharray="4"/>
-                    
-                    {/* Compression Curve */}
-                    {/* Knee at threshold */}
-                    {/* Map -60db to 0db to X: 0-200 */}
-                    {/* If thresh is -20, knee is at approx x=133 */}
-                    {(()=>{
-                        const threshX = ((60 + channel.comp.threshold) / 60) * 200; 
-                        const threshY = 200 - threshX;
-                        
-                        // Point 2 (reduction)
-                        // If ratio is 4:1, and input is +10db above thresh
-                        // output is +2.5db above thresh
-                        const endInputX = 400; // way above
-                        const inputDelta = endInputX - threshX;
-                        const outputDelta = inputDelta / channel.comp.ratio;
-                        const endOutputY = threshY - outputDelta;
-
-                        return (
-                            <polyline 
-                                points={`0,200 ${threshX},${threshY} ${400},${endOutputY}`} 
-                                fill="none" 
-                                stroke={channel.comp.on ? "#dfff00" : "#555"} 
-                                strokeWidth="3"
-                            />
-                        )
-                    })()}
-                </svg>
-            </div>
-         )
       case ViewSection.SENDS:
         return (
             <div className="flex flex-col h-full relative">
