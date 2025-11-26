@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { TOOLTIPS } from '../constants';
 
@@ -13,11 +14,12 @@ export const Fader: React.FC<FaderProps> = ({ level, onChange, educationMode }) 
   const trackRef = useRef<HTMLDivElement>(null);
 
   // Level is 0 to 1
-  // DB conversion for display: Logarithmic-ish approximation
+  // DB conversion for display: Logarithmic approximation matching the App.tsx curve
+  // 1.0 = +10, 0.75 = 0, 0.5 = -10, 0.25 = -30, 0 = -oo
   const toDB = (val: number) => {
-    if (val < 0.01) return '-oo';
-    const db = 20 * Math.log10(val * 4); // Scale to emulate +10 top
-    return db > 10 ? '+10' : db.toFixed(1);
+    if (val < 0.05) return '-oo';
+    const db = (val * 40) - 30;
+    return db > 0 ? `+${db.toFixed(1)}` : db.toFixed(1);
   };
 
   const updateFromPosition = (clientY: number) => {
@@ -90,12 +92,12 @@ export const Fader: React.FC<FaderProps> = ({ level, onChange, educationMode }) 
             setIsDragging(true);
         }}
       >
-        {/* DB Markings */}
+        {/* DB Markings aligned to new Curve: 0.75 = 0dB */}
         <div className="absolute right-4 top-0 text-[8px] text-zinc-500">+10</div>
-        <div className="absolute right-4 top-[20%] text-[8px] text-zinc-500">0</div>
-        <div className="absolute right-4 top-[40%] text-[8px] text-zinc-500">-5</div>
-        <div className="absolute right-4 top-[60%] text-[8px] text-zinc-500">-10</div>
-        <div className="absolute right-4 top-[80%] text-[8px] text-zinc-500">-20</div>
+        <div className="absolute right-4 top-[25%] text-[8px] text-zinc-500">0</div>
+        <div className="absolute right-4 top-[37.5%] text-[8px] text-zinc-500">-5</div>
+        <div className="absolute right-4 top-[50%] text-[8px] text-zinc-500">-10</div>
+        <div className="absolute right-4 top-[75%] text-[8px] text-zinc-500">-20</div>
         <div className="absolute right-4 bottom-0 text-[8px] text-zinc-500">-oo</div>
 
         {/* Fader Handle */}

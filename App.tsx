@@ -24,7 +24,7 @@ const App: React.FC = () => {
       talkbackOn: false
     },
     master: {
-      faderLevel: 0.75, // approx 0dB
+      faderLevel: 0.75, // Set to 0.75 for Unity Gain (0dB) start
       mute: false,
       selected: false
     }
@@ -41,6 +41,18 @@ const App: React.FC = () => {
   useEffect(() => {
     let animationFrameId: number;
 
+    const getFaderGain = (level: number) => {
+        // Logarithmic Fader Curve Simulation
+        // 1.0  (100%) = +10 dB
+        // 0.75 (75%)  = 0 dB (Unity)
+        // 0.5  (50%)  = -10 dB
+        // 0.25 (25%)  = -30 dB (approx)
+        // 0.0  (0%)   = -infinity
+        if (level < 0.05) return 0;
+        const db = (level * 40) - 30; 
+        return Math.pow(10, db / 20);
+    };
+
     const updateMeters = (timestamp: number) => {
       const currentState = stateRef.current;
       const currentChannels = currentState.channels;
@@ -51,9 +63,10 @@ const App: React.FC = () => {
         const next: Record<number, number> = {};
         
         // Simulation Constants
-        // We assume a steady signal is present at the input of every INPUT channel.
-        // Level is set to 0.001 (-60dBFS) so that at minimum gain (-12dB) it falls below the meter floor.
-        const INPUT_SIGNAL_LEVEL = 0.001; 
+        // Input Signal Level adjusted to 0.003 (~ -50dBFS)
+        // At default Gain -12dB: -50 - 12 = -62dBFS (Below -60dBFS meter floor)
+        // At nominal Gain +30dB: -50 + 30 = -20dBFS (Nominal Level)
+        const INPUT_SIGNAL_LEVEL = 0.003; 
         const NOISE_FLOOR = 0.00001;
 
         // Accumulators for Bus Signals (Bus 1-16)
@@ -106,7 +119,7 @@ const App: React.FC = () => {
              }
 
              // 5. Channel Strip Fader (Post-Fader)
-             const faderGain = ch.faderLevel * 4;
+             const faderGain = getFaderGain(ch.faderLevel);
              let postFader = signal * faderGain;
              if (ch.mute) postFader = 0;
 
@@ -150,7 +163,7 @@ const App: React.FC = () => {
              }
 
              // Bus Fader
-             const faderGain = ch.faderLevel * 4;
+             const faderGain = getFaderGain(ch.faderLevel);
              let postFader = signal * faderGain;
              if (ch.mute) postFader = 0;
 
@@ -160,8 +173,11 @@ const App: React.FC = () => {
         }
 
         // --- MASTER FADER METER ---
-        let masterOut = masterLeftSum * 0.2; // Headroom scaling
-        masterOut *= (currentState.master.faderLevel * 4);
+        let masterOut = masterLeftSum * 0.2; // Headroom scaling for summing
+        
+        const masterFaderGain = getFaderGain(currentState.master.faderLevel);
+        masterOut *= masterFaderGain;
+        
         if (currentState.master.mute) masterOut = 0;
 
         const currentMaster = prev[999] || 0;
@@ -320,8 +336,8 @@ const App: React.FC = () => {
       </div>
 
       {/* --- LOWER SECTION (FADER BANK) --- */}
-      {/* Increased to 60% (from 70%) to allow more room for upper section */}
-      <div className="h-[60%] bg-x32-panel border-t-4 border-black shadow-2xl flex relative z-20 shrink-0">
+      {/* Adjusted to 55% */}
+      <div className="h-[55%] bg-x32-panel border-t-4 border-black shadow-2xl flex relative z-20 shrink-0">
          
          {/* 1. INPUT LAYERS (Left) */}
          <div className="w-16 bg-zinc-900 border-r border-black flex flex-col gap-2 p-1 z-30 flex-shrink-0">

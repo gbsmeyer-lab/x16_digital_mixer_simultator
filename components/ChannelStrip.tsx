@@ -1,5 +1,3 @@
-
-
 import React, { memo } from 'react';
 import { Channel } from '../types';
 import { Fader } from './Fader';
@@ -26,6 +24,18 @@ export const ChannelStrip: React.FC<ChannelStripProps> = memo(({
   onSolo,
   onFaderChange
 }) => {
+  // Convert linear level to dB percent (Logarithmic)
+  // Matches MainMeter logic: -60dB to 0dB scale
+  const getMeterPercent = (level: number) => {
+    const db = level < 0.001 ? -999 : 20 * Math.log10(level);
+    const minDb = -60;
+    const maxDb = 0;
+    let percent = ((db - minDb) / (maxDb - minDb)) * 100;
+    return Math.max(0, Math.min(100, percent));
+  };
+
+  const percent = getMeterPercent(meterLevel || 0);
+
   return (
     <div className="w-20 flex-shrink-0 flex flex-col items-center gap-2 group">
         {/* Scribble Strip */}
@@ -66,9 +76,10 @@ export const ChannelStrip: React.FC<ChannelStripProps> = memo(({
                  <div 
                     className="w-full rounded-full transition-all ease-linear"
                     style={{ 
-                        height: `${Math.min(100, (meterLevel || 0) * 100)}%`,
+                        height: `${percent}%`,
                         transitionDuration: '50ms', 
-                        background: 'linear-gradient(to top, #33ff33 0%, #33ff33 60%, #ffff33 80%, #ff3333 100%)',
+                        // Standard Digital Scale Colors: Green -> -15 Yellow -> -6 Red
+                        background: 'linear-gradient(to top, #33ff33 0%, #33ff33 60%, #ffff33 75%, #ff3333 90%, #ff0000 100%)',
                         boxShadow: '0 0 5px rgba(51, 255, 51, 0.5)'
                     }}
                  ></div>

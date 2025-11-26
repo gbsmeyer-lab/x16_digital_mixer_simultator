@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Fader } from './Fader';
 import { MasterState } from '../types';
@@ -12,6 +11,17 @@ interface MasterStripProps {
 }
 
 export const MasterStrip: React.FC<MasterStripProps> = ({ state, onChange, educationMode, meterLevel }) => {
+  // Convert linear level to dB percent (Logarithmic)
+  const getMeterPercent = (level: number) => {
+    const db = level < 0.001 ? -999 : 20 * Math.log10(level);
+    const minDb = -60;
+    const maxDb = 0;
+    let percent = ((db - minDb) / (maxDb - minDb)) * 100;
+    return Math.max(0, Math.min(100, percent));
+  };
+
+  const percent = getMeterPercent(meterLevel);
+
   return (
     <div className="w-24 bg-zinc-900 border-l-4 border-black p-2 flex flex-col items-center gap-2 relative shadow-2xl z-40 group">
         <div className="absolute top-0 left-0 w-full h-1 bg-red-600/50"></div>
@@ -42,8 +52,8 @@ export const MasterStrip: React.FC<MasterStripProps> = ({ state, onChange, educa
                      <div 
                         className="w-full transition-all duration-75"
                         style={{ 
-                            height: `${Math.min(100, meterLevel * 100)}%`,
-                            background: 'linear-gradient(to top, #33ff33 0%, #33ff33 60%, #ffff33 80%, #ff3333 100%)'
+                            height: `${percent}%`,
+                            background: 'linear-gradient(to top, #33ff33 0%, #33ff33 60%, #ffff33 75%, #ff3333 90%, #ff0000 100%)'
                         }}
                      ></div>
                  </div>
@@ -51,8 +61,8 @@ export const MasterStrip: React.FC<MasterStripProps> = ({ state, onChange, educa
                      <div 
                         className="w-full transition-all duration-75"
                         style={{ 
-                            height: `${Math.min(100, meterLevel * 0.95 * 100)}%`, // Slight variation for stereo feel
-                            background: 'linear-gradient(to top, #33ff33 0%, #33ff33 60%, #ffff33 80%, #ff3333 100%)'
+                            height: `${Math.max(0, percent - 2)}%`, // Slight variation for stereo feel
+                            background: 'linear-gradient(to top, #33ff33 0%, #33ff33 60%, #ffff33 75%, #ff3333 90%, #ff0000 100%)'
                         }}
                      ></div>
                  </div>
