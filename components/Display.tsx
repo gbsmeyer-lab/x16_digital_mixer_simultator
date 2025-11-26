@@ -202,13 +202,16 @@ export const Display: React.FC<DisplayProps> = ({ channel, view, onLinkToggle })
       </div>
       
       {/* Active Channel Indicator on Screen */}
-      <div className="absolute bottom-2 right-2 flex items-center gap-2">
+      <div className="absolute bottom-2 right-2 flex items-center gap-2 z-50">
         {channel.linked && (
-            <div className="bg-indigo-600 text-white px-2 py-1 font-bold rounded text-sm flex items-center gap-1">
+            <div className="bg-indigo-600 text-white px-2 py-1 font-bold rounded text-sm flex items-center gap-1 shadow-md border border-white/10">
                 <LinkIcon size={12} /> LINK
             </div>
         )}
-        <div className="bg-x32-accent text-black px-2 py-1 font-bold rounded text-sm">
+        <div 
+            className="text-black px-2 py-1 font-bold rounded text-sm shadow-md border border-black/20"
+            style={{ backgroundColor: channel.color }}
+        >
             {channel.label}
         </div>
       </div>
