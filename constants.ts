@@ -1,3 +1,4 @@
+
 import { Channel } from './types';
 
 const COLORS = [
@@ -22,7 +23,7 @@ export const INITIAL_CHANNELS: Channel[] = Array.from({ length: 32 }, (_, i) => 
       : `CH ${id < 10 ? '0' + id : id}`,
     color: isBus ? '#00ffff' : COLORS[i % COLORS.length], // Cyan for busses
     icon: isBus ? 'activity' : 'mic',
-    gain: 0,
+    gain: -12, // Start fully closed (min -12dB)
     phantom48v: false,
     polarity: false,
     lowCut: false,

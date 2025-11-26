@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { INITIAL_CHANNELS } from './constants';
 import { Channel, AppState, ViewSection } from './types';
@@ -43,7 +42,6 @@ const App: React.FC = () => {
     let animationFrameId: number;
 
     const updateMeters = (timestamp: number) => {
-      const time = timestamp / 1000; // time in seconds
       const currentState = stateRef.current;
       const currentChannels = currentState.channels;
       
@@ -51,92 +49,127 @@ const App: React.FC = () => {
 
       setMeterLevels(prev => {
         const next: Record<number, number> = {};
-        let masterSum = 0;
         
-        currentChannels.forEach(ch => {
-           // 1. Signal Generation (Simulated Input)
-           const speed = 1 + (ch.id % 7) * 0.15;
-           const phase = ch.id * 10;
-           
-           // Continuous sine wave + some noise
-           const signalBase = (Math.sin(time * speed * 2 + phase) + 1) / 2; 
-           const jitter = (Math.random() - 0.5) * 0.05;
-           
-           // Base Input Level: "Mic Signal"
-           const inputLevel = (signalBase * 0.4) + 0.1 + jitter; 
+        // Simulation Constants
+        // We assume a steady signal is present at the input of every INPUT channel.
+        // Level is set to 0.001 (-60dBFS) so that at minimum gain (-12dB) it falls below the meter floor.
+        const INPUT_SIGNAL_LEVEL = 0.001; 
+        const NOISE_FLOOR = 0.00001;
 
-           // 2. Preamp Gain Stage
-           const gainLinear = Math.pow(10, ch.gain / 20);
-           let processedSignal = inputLevel * gainLinear;
-           
-           // 3. Gate Processing
-           if (ch.gate.on) {
-               const threshLinear = Math.pow(10, ch.gate.threshold / 20);
-               if (processedSignal < threshLinear) {
-                   processedSignal = 0;
-               }
-           }
+        // Accumulators for Bus Signals (Bus 1-16)
+        const busSums = new Float32Array(16); // initialized to 0
+        let masterLeftSum = 0;
 
-           // --- SELECTED CHANNEL METER (Pre-Fader / Post-Gain) ---
-           // We calculate this regardless of mute status
-           if (ch.id === currentState.selectedChannelId) {
+        // --- PASS 1: PROCESS INPUT CHANNELS (1-16) ---
+        for (let i = 0; i < 16; i++) {
+             const ch = currentChannels[i];
+             if (!ch) continue;
+
+             // 1. Preamp Gain
+             const gainFactor = Math.pow(10, ch.gain / 20);
+             let signal = INPUT_SIGNAL_LEVEL * gainFactor;
+
+             // PFL (Selected Channel Meter) - Tapped Post-Gain
+             // Shows the signal level immediately after the gain stage, before Gate/Comp/Fader.
+             if (ch.id === currentState.selectedChannelId) {
                 const currentPFL = prev[-1] || 0;
-                const attack = 0.5;
-                const release = 0.1;
-                let newPFL = currentPFL;
-                
-                if (processedSignal > currentPFL) {
-                    newPFL = currentPFL + (processedSignal - currentPFL) * attack;
-                } else {
-                    newPFL = currentPFL - (currentPFL - processedSignal) * release;
-                }
-                next[-1] = Math.max(0, Math.min(2.0, newPFL));
-           }
+                next[-1] = currentPFL + (signal - currentPFL) * 0.5;
+             }
 
-           // --- CHANNEL STRIP METER (Post-Fader) ---
-           if (ch.mute) {
-               next[ch.id] = 0;
-           } else {
-               // 4. Fader Stage
-               const faderGain = ch.faderLevel > 0 ? Math.pow(ch.faderLevel, 1.5) * 2 : 0;
-               const outputLevel = processedSignal * faderGain;
-               
-               // Add to master sum (simplified mix engine)
-               if (ch.id <= 16) { // Only input channels for now
-                  masterSum += outputLevel;
-               }
-               
-               // 5. Meter Ballistics (Attack/Release)
-               const currentLevel = prev[ch.id] || 0;
-               const attack = 0.5;   // Instant rise
-               const release = 0.1; // Slow decay
-               
-               let newLevel = currentLevel;
-               if (outputLevel > currentLevel) {
-                   newLevel = currentLevel + (outputLevel - currentLevel) * attack;
-               } else {
-                   newLevel = currentLevel - (currentLevel - outputLevel) * release;
-               }
-               
-               next[ch.id] = Math.max(0, Math.min(1.2, newLevel)); 
-           }
-        });
+             // 2. Dynamics: Gate
+             if (ch.gate.on) {
+                 const sigDB = signal > 0 ? 20 * Math.log10(signal) : -100;
+                 if (sigDB < ch.gate.threshold) {
+                     signal = 0;
+                 }
+             }
 
-        // Update Master Meter (ID 999)
-        const masterOut = currentState.master.mute ? 0 : (masterSum * 0.3 * (currentState.master.faderLevel * 1.5));
-        const currentMaster = prev[999] || 0;
-        const attack = 0.5;
-        const release = 0.1;
-        let newMaster = currentMaster;
-        if (masterOut > currentMaster) {
-            newMaster = currentMaster + (masterOut - currentMaster) * attack;
-        } else {
-            newMaster = currentMaster - (currentMaster - masterOut) * release;
+             // 3. Dynamics: Compressor
+             if (ch.comp.on && signal > NOISE_FLOOR) {
+                 const sigDB = 20 * Math.log10(signal);
+                 if (sigDB > ch.comp.threshold) {
+                     const over = sigDB - ch.comp.threshold;
+                     const reduction = over * (1 - (1/ch.comp.ratio));
+                     signal = signal / Math.pow(10, reduction / 20);
+                 }
+             }
+
+             // 'signal' is now the processed channel signal (Pre-Fader)
+
+             // 4. Distribute to Busses
+             // We assume sends are tapped here (Pre-Fader) for this simulation
+             for (let b = 0; b < 16; b++) {
+                 const sendAmt = ch.sends[b];
+                 if (sendAmt > 0) {
+                     busSums[b] += signal * sendAmt;
+                 }
+             }
+
+             // 5. Channel Strip Fader (Post-Fader)
+             const faderGain = ch.faderLevel * 4;
+             let postFader = signal * faderGain;
+             if (ch.mute) postFader = 0;
+
+             // Update Channel Meter (Post Fader)
+             const currentCh = prev[ch.id] || 0;
+             next[ch.id] = currentCh + (postFader - currentCh) * 0.3;
+
+             // Add to Main Mix
+             if (!ch.mute) {
+                 masterLeftSum += postFader;
+             }
         }
-        next[999] = Math.max(0, Math.min(1.2, newMaster));
+
+        // --- PASS 2: PROCESS BUS CHANNELS (17-32) ---
+        for (let i = 16; i < 32; i++) {
+             const ch = currentChannels[i];
+             if (!ch) continue;
+             
+             const busIndex = i - 16;
+             // Input is the summed sends
+             let signal = busSums[busIndex];
+
+             // Apply Bus Trim (using gain knob)
+             const gainFactor = Math.pow(10, ch.gain / 20);
+             signal *= gainFactor;
+
+             // Bus PFL - Tapped Post-Trim
+             if (ch.id === currentState.selectedChannelId) {
+                const currentPFL = prev[-1] || 0;
+                next[-1] = currentPFL + (signal - currentPFL) * 0.5;
+             }
+
+             // Bus Compressor
+             if (ch.comp.on && signal > NOISE_FLOOR) {
+                 const sigDB = 20 * Math.log10(signal);
+                 if (sigDB > ch.comp.threshold) {
+                     const over = sigDB - ch.comp.threshold;
+                     const reduction = over * (1 - (1/ch.comp.ratio));
+                     signal = signal / Math.pow(10, reduction / 20);
+                 }
+             }
+
+             // Bus Fader
+             const faderGain = ch.faderLevel * 4;
+             let postFader = signal * faderGain;
+             if (ch.mute) postFader = 0;
+
+             // Update Bus Meter
+             const currentCh = prev[ch.id] || 0;
+             next[ch.id] = currentCh + (postFader - currentCh) * 0.3;
+        }
+
+        // --- MASTER FADER METER ---
+        let masterOut = masterLeftSum * 0.2; // Headroom scaling
+        masterOut *= (currentState.master.faderLevel * 4);
+        if (currentState.master.mute) masterOut = 0;
+
+        const currentMaster = prev[999] || 0;
+        next[999] = currentMaster + (masterOut - currentMaster) * 0.3;
 
         return next;
       });
+      
       animationFrameId = requestAnimationFrame(updateMeters);
     };
 
@@ -185,17 +218,12 @@ const App: React.FC = () => {
   const handleLinkToggle = useCallback((id: number) => {
     setState(prev => {
         // Pairs are (1,2), (3,4), etc.
-        // Partner ID logic
         const isOdd = id % 2 !== 0;
         const partnerId = isOdd ? id + 1 : id - 1;
-        
         const channel = prev.channels.find(c => c.id === id);
         const partner = prev.channels.find(c => c.id === partnerId);
-        
         if (!channel || !partner) return prev;
-        
         const newLinkState = !channel.linked;
-        
         return {
             ...prev,
             channels: prev.channels.map(c => {
@@ -221,21 +249,9 @@ const App: React.FC = () => {
             const partner = prev.channels.find(c => c.id === partnerId);
             
             if (partner) {
-                const oldLevel = channel.faderLevel;
                 let partnerNewLevel = partner.faderLevel;
-
-                if (oldLevel === 0 && partner.faderLevel === 0) {
-                    // Both starting from bottom - move together
-                    partnerNewLevel = val;
-                } else if (oldLevel > 0) {
-                     // Calculate relative change ratio
-                     const ratio = val / oldLevel;
-                     partnerNewLevel = partner.faderLevel * ratio;
-                }
-                // If oldLevel was 0 but partner wasn't, we can't establish a ratio.
-                // In that case, we leave the partner alone to avoid infinite jumps.
-                
-                partnerNewLevel = Math.max(0, Math.min(1, partnerNewLevel));
+                // Basic relative linking or absolute match. X32 usually absolute matches on touch.
+                partnerNewLevel = val; 
                 updates.push({ id: partnerId, val: partnerNewLevel });
             }
         }
@@ -252,7 +268,6 @@ const App: React.FC = () => {
 
   const currentLayerChannels = useMemo(() => {
      const start = state.layer * 8;
-     // Input channels are 0-15 (IDs 1-16)
      return state.channels.slice(start, start + 8);
   }, [state.channels, state.layer]);
 
@@ -265,7 +280,8 @@ const App: React.FC = () => {
     <div className="flex flex-col h-full bg-x32-dark text-gray-200">
       
       {/* --- UPPER SECTION (SCREEN + STRIP + CONTROL ROOM) --- */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      {/* Reduced height by increasing lower section flex/height */}
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-gradient-to-b from-zinc-800 to-zinc-900">
         
         {/* Left: Channel Strip Controls */}
         <div className="flex-[2] bg-zinc-800 border-r border-zinc-900 p-2 min-w-0">
@@ -279,7 +295,11 @@ const App: React.FC = () => {
         </div>
 
         {/* Center: Main Display */}
-        <div className="flex-[1.5] bg-black p-4 min-w-[300px] border-l border-zinc-700 flex flex-col z-10">
+        <div className="flex-[1.5] bg-black p-4 min-w-[300px] border-l border-zinc-700 flex flex-col z-10 relative">
+             {/* PFL Meter Label Overlay */}
+             <div className="absolute top-2 right-2 z-20 pointer-events-none">
+                 <span className="text-[10px] font-bold text-zinc-500 bg-black/50 px-1 rounded border border-zinc-800">PFL / SOLO</span>
+             </div>
             <Display 
                 channel={selectedChannel} 
                 view={state.activeView} 
@@ -288,7 +308,7 @@ const App: React.FC = () => {
             />
         </div>
         
-        {/* Metering Strip */}
+        {/* Metering Strip (PFL) */}
         <MainMeter level={meterLevels[-1] || 0} />
 
         {/* Right: Control Room */}
@@ -300,7 +320,8 @@ const App: React.FC = () => {
       </div>
 
       {/* --- LOWER SECTION (FADER BANK) --- */}
-      <div className="h-[63%] bg-x32-panel border-t-4 border-black shadow-2xl flex relative z-20 shrink-0">
+      {/* Increased to 60% (from 70%) to allow more room for upper section */}
+      <div className="h-[60%] bg-x32-panel border-t-4 border-black shadow-2xl flex relative z-20 shrink-0">
          
          {/* 1. INPUT LAYERS (Left) */}
          <div className="w-16 bg-zinc-900 border-r border-black flex flex-col gap-2 p-1 z-30 flex-shrink-0">
