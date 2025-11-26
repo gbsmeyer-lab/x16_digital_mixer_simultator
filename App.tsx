@@ -53,7 +53,7 @@ const App: React.FC = () => {
         return Math.pow(10, db / 20);
     };
 
-    const updateMeters = (timestamp: number) => {
+    const updateMeters = () => {
       const currentState = stateRef.current;
       const currentChannels = currentState.channels;
       
@@ -63,10 +63,11 @@ const App: React.FC = () => {
         const next: Record<number, number> = {};
         
         // Simulation Constants
-        // Input Signal Level adjusted to 0.003 (~ -50dBFS)
-        // At default Gain -12dB: -50 - 12 = -62dBFS (Below -60dBFS meter floor)
-        // At nominal Gain +30dB: -50 + 30 = -20dBFS (Nominal Level)
-        const INPUT_SIGNAL_LEVEL = 0.003; 
+        // Input Signal Level adjusted to 0.001 (~ -60dBFS)
+        // At default Gain -12dB: -60 - 12 = -72dBFS (Below meter floor)
+        // At nominal Gain +30dB: -60 + 30 = -30dBFS
+        // At max Gain +60dB: -60 + 60 = 0dBFS
+        const INPUT_SIGNAL_LEVEL = 0.001; 
         const NOISE_FLOOR = 0.00001;
 
         // Accumulators for Bus Signals (Bus 1-16)
