@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { TOOLTIPS } from '../constants';
 
@@ -92,7 +93,7 @@ export const Knob: React.FC<KnobProps> = ({
   const rotation = -135 + (percentage * 270);
 
   return (
-    <div className="flex flex-col items-center gap-1 group relative select-none">
+    <div className="flex flex-col items-center gap-1 group relative select-none touch-none">
        {educationMode && tooltipKey && (
         <div className="absolute bottom-full mb-2 w-48 p-2 bg-yellow-100 text-black text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 font-sans">
           <strong>{label}:</strong> {TOOLTIPS[tooltipKey]}

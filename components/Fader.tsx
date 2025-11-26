@@ -71,7 +71,7 @@ export const Fader: React.FC<FaderProps> = ({ level, onChange, educationMode }) 
   }, [isDragging]);
 
   return (
-    <div className="h-64 w-12 flex flex-col items-center relative group">
+    <div className="h-64 w-12 flex flex-col items-center relative group touch-none">
        {educationMode && (
         <div className="absolute bottom-full mb-2 w-48 p-2 bg-yellow-100 text-black text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
           {TOOLTIPS['fader']}
@@ -102,7 +102,7 @@ export const Fader: React.FC<FaderProps> = ({ level, onChange, educationMode }) 
 
         {/* Fader Handle */}
         <div 
-          className="absolute left-1/2 -translate-x-1/2 w-8 h-12 bg-zinc-300 rounded shadow-lg border-b-4 border-zinc-500 flex items-center justify-center"
+          className="absolute left-1/2 -translate-x-1/2 w-8 h-12 bg-zinc-300 rounded shadow-lg border-b-4 border-zinc-500 flex items-center justify-center touch-none"
           style={{ bottom: `calc(${level * 100}% - 24px)` }}
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
