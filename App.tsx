@@ -9,7 +9,6 @@ import { ChannelStrip } from './components/ChannelStrip';
 import { ControlRoom } from './components/ControlRoom';
 import { MasterStrip } from './components/MasterStrip';
 import { MainMeter } from './components/MainMeter';
-import { GraduationCap } from 'lucide-react';
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>({
@@ -265,21 +264,6 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-x32-dark text-gray-200">
       
-      {/* --- TOP BAR --- */}
-      <div className="h-10 bg-black flex items-center justify-between px-4 border-b border-zinc-700 shrink-0">
-        <div className="flex items-center gap-2">
-            <div className="font-black italic text-xl tracking-tighter text-gray-100">BEHRINGER <span className="text-x32-accent">X32</span> <span className="text-xs font-normal not-italic text-zinc-500 ml-1 opacity-50">EDU-SIM</span></div>
-        </div>
-        
-        <button 
-          onClick={() => setState(s => ({ ...s, educationMode: !s.educationMode }))}
-          className={`flex items-center gap-2 px-4 py-1 rounded-full border transition-all ${state.educationMode ? 'bg-blue-600 border-blue-400 text-white shadow-[0_0_15px_rgba(37,99,235,0.5)]' : 'bg-zinc-800 border-zinc-600 text-zinc-400 hover:bg-zinc-700'}`}
-        >
-          <GraduationCap size={18} />
-          <span className="text-xs font-bold uppercase">Education Mode: {state.educationMode ? 'ON' : 'OFF'}</span>
-        </button>
-      </div>
-
       {/* --- UPPER SECTION (SCREEN + STRIP + CONTROL ROOM) --- */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         
@@ -316,7 +300,7 @@ const App: React.FC = () => {
       </div>
 
       {/* --- LOWER SECTION (FADER BANK) --- */}
-      <div className="h-[55%] bg-x32-panel border-t-4 border-black shadow-2xl flex relative z-20 shrink-0">
+      <div className="h-[63%] bg-x32-panel border-t-4 border-black shadow-2xl flex relative z-20 shrink-0">
          
          {/* 1. INPUT LAYERS (Left) */}
          <div className="w-16 bg-zinc-900 border-r border-black flex flex-col gap-2 p-1 z-30 flex-shrink-0">
