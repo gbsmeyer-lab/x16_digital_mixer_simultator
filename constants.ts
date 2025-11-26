@@ -1,8 +1,4 @@
-
-
-
-
-import { Channel, ViewSection } from './types';
+import { Channel } from './types';
 
 const COLORS = [
   '#ff3333', // Red

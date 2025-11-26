@@ -1,9 +1,6 @@
-
-
-
 import React from 'react';
 import { Channel, ViewSection } from '../types';
-import { Home, Link as LinkIcon } from 'lucide-react';
+import { Link as LinkIcon } from 'lucide-react';
 
 interface DisplayProps {
   channel: Channel;
@@ -12,7 +9,7 @@ interface DisplayProps {
   onLinkToggle?: (id: number) => void;
 }
 
-export const Display: React.FC<DisplayProps> = ({ channel, view, onViewChange, onLinkToggle }) => {
+export const Display: React.FC<DisplayProps> = ({ channel, view, onLinkToggle }) => {
   // Simple Visualization helpers
   
   // EQ Curve Generator
@@ -97,8 +94,6 @@ export const Display: React.FC<DisplayProps> = ({ channel, view, onViewChange, o
                     {/* Map -60db to 0db to X: 0-200 */}
                     {/* If thresh is -20, knee is at approx x=133 */}
                     {(()=>{
-                        const zeroDBX = 200;
-                        const range = 60; // display range 60db
                         const threshX = ((60 + channel.comp.threshold) / 60) * 200; 
                         const threshY = 200 - threshX;
                         

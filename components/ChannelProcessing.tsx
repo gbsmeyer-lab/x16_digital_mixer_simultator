@@ -1,10 +1,8 @@
-
-
 import React, { useState } from 'react';
 import { Channel, ViewSection } from '../types';
 import { Knob } from './Knob';
 import { TOOLTIPS } from '../constants';
-import { Monitor, Activity, BarChart3, Settings2, Sliders } from 'lucide-react';
+import { Monitor, BarChart3, Settings2, Sliders } from 'lucide-react';
 
 interface Props {
   channel: Channel;
@@ -36,7 +34,6 @@ export const ChannelProcessing: React.FC<Props> = ({ channel, updateChannel, set
   const [selectedEQBandId, setSelectedEQBandId] = useState<string>('lomid');
 
   // Helper to update nested state
-  const updateGate = (key: string, val: any) => updateChannel(channel.id, { gate: { ...channel.gate, [key]: val } });
   const updateComp = (key: string, val: any) => updateChannel(channel.id, { comp: { ...channel.comp, [key]: val } });
   const updateEQ = (bandId: string, key: string, val: any) => {
     const newBands = channel.eq.bands.map(b => b.id === bandId ? { ...b, [key]: val } : b);
